@@ -1,0 +1,10 @@
+#!bin/bash
+
+# 修改nats_ip
+sed -i "s/message_bus_uri: nats:\/\/<\%\= local_ip %>:4222/message_bus_uri: nats:\/\/<%= @nats_ip %>:4222/g" /home/paas/paas-release.git/jobs/cloud_controller_ng/cloud_controller_ng.yml.erb
+
+# 修改uaa_ip
+sed -i "s/url: \"http:\/\/<\%\= local_ip %>:8080\/uaa\"/url: \"http:\/\/<%= @uaa_ip %>:8080\/uaa\"/g" /home/paas/paas-release.git/jobs/cloud_controller_ng/cloud_controller_ng.yml.erb
+
+# 启动cc
+/home/paas/paas-release.git/bin/paas cc start

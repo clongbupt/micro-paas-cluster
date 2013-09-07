@@ -1,0 +1,7 @@
+#!bin/bash
+
+# 修改nats_ip
+sed -i "s/mbus: nats:\/\/<\%\= local_ip %>:4222\//mbus: nats:\/\/<%= @nats_ip %>:4222\//g" /home/paas/paas-release.git/jobs/health_manager/health_manager.yml.erb
+
+# 启动hm
+/home/paas/paas-release.git/bin/paas hm start

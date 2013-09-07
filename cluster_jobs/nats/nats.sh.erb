@@ -1,0 +1,7 @@
+#!bin/bash
+
+# 修改ip
+sed -i 's/net:\ 0.0.0.0/net:\ <%= @nats_ip %>/g' /home/paas/paas-release.git/jobs/nats/nats.yml.erb
+
+# 启动nats组件
+/home/paas/paas-release.git/bin/paas nats start

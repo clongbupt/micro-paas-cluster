@@ -1,0 +1,7 @@
+#!bin/bash
+
+# 修改nats_ip
+sed -i "s/host: <\%\= local_ip %>/host: <%= @nats_ip %>/g" /home/paas/paas-release.git/jobs/uaa/uaa.yml.erb
+
+# 启动uaa
+/home/paas/paas-release.git/bin/paas uaa start

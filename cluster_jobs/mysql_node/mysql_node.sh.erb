@@ -1,0 +1,15 @@
+#!bin/bash
+
+# 修改@nats_ip
+sed -i "s/mbus: nats:\/\/<\%\= local_ip %>:4222/mbus: nats:\/\/<% @nats_ip %>:4222/g" /home/paas/paas-release.git/jobs/mysql_node/mysql_node.yml.erb
+
+# 修改mysql_node_free_1
+sed -i "s/node_id:\ mysql_node_free_1/node_id:\ mysql_node_free_<%= index+1 %>/g" /home/paas/paas-release.git/jobs/mysql_node/mysql_node.yml.erb
+
+# 修改index
+sed -i 's/index: 0/index: <%= index%>/g' /home/paas/paas-release.git/jobs/mysql_node/msyql_node.yml.erb
+
+
+# 启动mysql_node
+/home/paas/paas-release.git/bin/paas mysql start
+/home/paas/paas-release.git/bin/paas mysql_node start

@@ -1,0 +1,56 @@
+---
+nats: 10.1.59.160
+uaa: 10.1.59.187
+cc: 10.1.59.180
+
+components:
+  - nats
+  - router
+  - postgres
+  - uaa
+  - cloud_controller_ng
+  - health_manager
+  - dea_ng
+  - mysql_gateway
+  - mysql_node
+
+
+server:
+  nats:
+    ip: 
+      - 10.1.59.160
+
+  router:
+    ip:
+      - 10.1.59.188
+      - 10.1.59.172
+
+  postgres:
+    ip:
+      - 10.1.59.174
+
+  uaa:
+    ip: 
+      - 10.1.59.187
+
+  cloud_controller_ng:
+    ip: 
+      - 10.1.59.180
+
+  health_manager:
+    ip: 
+      - 10.1.59.163
+
+  dea_ng:
+    ip:
+      - 10.1.59.170
+      - 10.1.59.184
+
+  mysql_gateway:
+    ip:
+      - 10.1.59.175
+
+  mysql_node:
+    ip:
+      - 10.1.59.175
+      - 10.1.59.176

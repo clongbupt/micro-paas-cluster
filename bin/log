@@ -1,0 +1,167 @@
+#!/usr/bin/env ruby
+# coding : UTF-8
+
+require 'pathname'
+
+$HOME = Pathname.new(ENV['HOME'])
+$PAAS_HOME = Pathname.new(File.dirname(__FILE__)).realpath.parent
+$VCAP_HOME = $HOME + "vcap"
+
+$LOAD_PATH.unshift($PAAS_HOME + 'lib')
+
+require 'json'
+
+class FileTrace
+
+  def initialize(filename, type)
+    @filename = filename
+    @type = type
+  end
+
+  def trace(json_block, line_block)
+    @json_trace = json_block
+    @line_trace = line_block
+    tail_f unless @f
+  end
+
+  def tail_f
+    @f = IO.popen("tail -f #{@filename}")
+    @thread = Thread.new {
+      while (line = @f.readline)
+        if @json_trace
+          msg = JSON.parse(line)
+          @json_trace.call(msg, self)
+        end
+        if @line_trace
+          @line_trace.call(line, self)
+        end
+      end
+    }
+  end
+
+  def filename; @filename.basename.to_s end
+  def type; @type end
+
+  def join
+    @thread.join
+  end
+end
+
+line_trace = lambda { |msg, t|
+  puts "%- 6s : %s" % [t.type.to_s, msg]
+}
+
+json_trace = lambda { |msg, t|
+  # 过滤dea的例行事件日志(router.start事件)
+  return if t.type == :dea and msg['message'].to_s =~ /router.start/
+  return if msg['source'] == 'cf.registrar'
+  
+  data = msg['data']
+  request_guid = data['request_guid'] if data
+  msg_content = request_guid ? "(#{request_guid[0..5]}) #{msg['message']}" : msg['message']
+  output = "%s %- 3s %- 8s [%- 8s] : %s" % [
+    Time.at(msg['timestamp']).strftime("%H:%M:%S.%3N"), 
+    t.type.to_s, 
+    "[#{msg['log_level']}]",
+    msg['source'],
+    msg_content
+  ]
+
+  puts output
+
+  if data
+    data.delete 'request_guid' 
+    puts "---> #{msg['data'].inspect}" unless msg['data'].empty?
+  end
+#"data"=>{"request_guid"=>"b8eb163b-0c25-4893-b8de-1f947b8b6027"}, 
+}
+
+sys_log_home = $VCAP_HOME + 'sys' + 'log'
+
+traces = []
+
+component = ARGV[0]
+
+case component
+when 'nats'
+  [
+    ['nats.log', :nats, false],
+    ['nats.stderr.log', :natse, false],
+    ['nats.stdout.log', :natso, false]
+  ].each do |f|
+    json_t = json_trace if f[2]
+    line_t = line_trace unless f[2] 
+    traces << FileTrace.new(sys_log_home + f[0], f[1]).trace(json_t, line_t)
+  end
+when 'router'
+  [
+    ['router.log', :router, true],
+    ['router.stderr.log', :rouerr, false],
+    ['router.stdout.log', :rouout, false]
+  ].each do |f|
+    json_t = json_trace if f[2]
+    line_t = line_trace unless f[2] 
+    traces << FileTrace.new(sys_log_home + f[0], f[1]).trace(json_t, line_t)
+  end
+when 'uaa'
+  [
+    ['uaa.log', :uaa, false],
+    ['uaa.stderr.log', :uaaerr, false],
+    ['uaa.stdout.log', :uaaout, false]
+  ].each do |f|
+    json_t = json_trace if f[2]
+    line_t = line_trace unless f[2] 
+    traces << FileTrace.new(sys_log_home + f[0], f[1]).trace(json_t, line_t)
+  end  
+when 'cloud_controller', 'ccng', 'cc'
+  [
+    ['cloud_controller.log', :ccng, true],
+    ['cloud_controller.stderr.log', :ccngerr, false],
+    ['cloud_controller.stdout.log', :ccngout, false]
+  ].each do |f|
+    json_t = json_trace if f[2]
+    line_t = line_trace unless f[2] 
+    traces << FileTrace.new(sys_log_home + f[0], f[1]).trace(json_t, line_t)
+  end  
+when 'warden'
+  [
+    ['warden.log', :ccng, true],
+    ['warden.stderr.log', :ccngerr, false],
+    ['warden.stdout.log', :ccngout, false]
+  ].each do |f|
+    json_t = json_trace if f[2]
+    line_t = line_trace unless f[2] 
+    traces << FileTrace.new(sys_log_home + f[0], f[1]).trace(json_t, line_t)
+  end  
+else
+  [
+    ['dea_ng.stdout.log', :dea, false],
+    ['warden.log', :war, true],
+    ['cloud_controller.log', :cc, true]
+  ].each do |f|
+    json_t = json_trace if f[2]
+    line_t = line_trace unless f[2] 
+    traces << FileTrace.new(sys_log_home + f[0], f[1]).trace(json_t, line_t)
+  end
+end
+
+traces.each { |t| t.join }
+
+=begin
+trace "file_name" do |t|
+  t.filter "message=name"
+  t.filter "user_name"
+  t.filter "helo.name"
+  t.filter "username"
+
+  t.format "trace it"
+  t.format "user_it at a name"
+  t.format "username"
+
+  t.output stdout
+  t.output "filename1"
+end
+
+trace "file_name1" do |line|
+end
+=end

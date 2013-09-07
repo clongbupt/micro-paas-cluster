@@ -1,0 +1,105 @@
+#!/usr/bin/env ruby
+# coding : UTF-8
+
+require 'pathname'
+require 'optparse'
+require 'yaml'
+
+
+$HOME = Pathname.new(ENV['HOME'])
+$PAAS_HOME = Pathname.new(File.dirname(__FILE__)).realpath.parent
+$VCAP_HOME = $HOME + 'vcap'
+
+$LOAD_PATH.unshift($PAAS_HOME + 'lib')
+
+require 'paas/cluster_build'
+PaaS::Shell.exit_when_failed = true
+
+# 利用optparser分析用户提供的参数
+def parse_args
+
+  results = {}
+  args = ARGV.dup
+  opts_parser = OptionParser.new do |opts|
+    opts.banner = "Usage: paas-cluster-build [options] all|<package_name>"
+
+    opts.separator ""
+
+    opts.on("-c", "--config [ARG]", "Configuration File") do |opt|
+      results[:config_file] = opt
+    end
+    opts.on("-h", "--help", "Show this message") { puts opts; exit }
+  end
+
+  args = opts_parser.parse!(args)
+  if args.size == 0
+    puts opts_parser 
+    exit 
+  end
+
+  results[:deploy_name] = args[0]
+
+  results
+
+end
+
+# 解析配置文件
+def read_config_from_file(config_file)
+  config_path = File.join(File.dirname(__FILE__),'../config')
+  config_file ||= File.join(config_path, 'cluster.yml')
+  begin
+    config = YAML.load_file(config_file)
+  rescue => e
+    $stderr.puts "Could not read configuration file #{config_file}: #{e}"
+    exit 1
+  end
+  config
+end
+
+# 执行单个组件的部署任务
+def execute_cluster_job_command(job_name, config)
+  load "#{$PAAS_HOME}/cluster_jobs/#{job_name}/build.rb"
+  job_class = PaaS::ClusterBuild.find(job_name)
+
+  args = config["server"][job_name]
+
+  # 携带config参数 父类需要   此处可否对父类进行单实例化
+  job = job_class.new config
+
+  job.start args
+end
+
+############## 程序入口处 ################
+
+args = parse_args
+config = read_config_from_file(args[:config_file])
+
+deploy_name = args[:deploy_name]
+
+# begin
+if deploy_name == 'all'
+  components = config["components"]
+
+  components.each do |component|
+    execute_cluster_job_command(component, config)
+  end
+
+else
+  deploy_name = 'cloud_controller_ng' if deploy_name == 'cc'
+  deploy_name = 'health_manager' if deploy_name == 'hm'
+
+  execute_cluster_job_command(deploy_name, config)
+end
+
+=begin
+# 时间记录 暂不考虑加入
+ensure
+  puts "======= build report ======="
+  sum = 0
+  $build_report.each do |name, interval, report|
+    sum += interval
+    puts report
+  end  
+  puts "---> total used use #{(sum/60).to_i} minutes #{(sum % 60).to_i} seconds"
+end
+=end

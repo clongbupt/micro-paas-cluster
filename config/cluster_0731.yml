@@ -1,0 +1,28 @@
+---
+nats: 10.1.59.161
+uaa: 10.1.59.253
+cc: 10.1.59.253
+
+components:
+  - nats_router
+  - postgres_uaa_cc_hm
+  - dea_ng
+  - mysql_service
+
+
+server:
+  nats_router:
+    ip: 
+      - 10.1.59.161
+
+  postgres_uaa_cc_hm:
+    ip:
+      - 10.1.59.253
+
+  dea_ng:
+    ip:
+      - 10.1.59.254
+
+  mysql_service:
+    ip:
+      - 10.1.59.251

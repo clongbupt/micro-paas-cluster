@@ -1,0 +1,16 @@
+#!bin/bash
+
+# 初始化postgres数据库   需要测试
+export LD_LIBRARY_PATH=/home/paas/build_dir/target/postgres/lib
+
+/home/paas/build_dir/target/postgres/bin/createdb -h localhost -p 5432 uaa
+
+/home/paas/build_dir/target/postgres/bin/psql -h localhost -p 5432 -d uaa -c "create role root SUPERUSER LOGIN INHERIT CREATEDB"
+
+/home/paas/build_dir/target/postgres/bin/psql -h localhost -p 5432 -d uaa -c "alter role root with password 'changeme'"
+
+/home/paas/build\_dir/target/postgres/bin/psql -p 5432 -h localhost -d cloud_controller -c "create extension citext"
+
+
+# 启动postgres
+/home/paas/paas-release.git/bin/paas postgres start

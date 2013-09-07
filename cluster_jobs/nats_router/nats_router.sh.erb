@@ -1,0 +1,24 @@
+#!bin/bash
+
+## 配置nats
+
+# 修改ip
+sed -i 's/net:\ 0.0.0.0/net:\ <%= @nats_ip %>/g' /home/paas/paas-release.git/jobs/nats/nats.yml.erb
+
+## 配置router
+
+# 修改nats_ip
+sed -i "s/host:\/ <\%\= local_ip %>/host: <%= @nats_ip %>/g" /home/paas/paas-release.git/jobs/router/router.yml.erb
+
+# 修改index
+sed -i 's/index: 0/index: <%= index%>/g' /home/paas/paas-release.git/jobs/router/router.yml.erb
+
+
+
+## 启动命令
+
+# 启动nats
+/home/paas/paas-release.git/bin/paas nats start
+
+# 启动router
+/home/paas/paas-release.git/bin/paas router start

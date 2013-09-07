@@ -1,0 +1,5 @@
+vcap
+release
+example/sinatra/vendor
+init.tar
+logs

@@ -1,0 +1,50 @@
+#!bin/bash
+
+## 配置postgres
+
+# 初始化postgres数据库   需要测试
+export LD_LIBRARY_PATH=/home/paas/build_dir/target/postgres/lib
+
+/home/paas/build_dir/target/postgres/bin/createdb -h localhost -p 5432 uaa
+
+/home/paas/build_dir/target/postgres/bin/psql -h localhost -p 5432 -d uaa -c "create role root SUPERUSER LOGIN INHERIT CREATEDB"
+
+/home/paas/build_dir/target/postgres/bin/psql -h localhost -p 5432 -d uaa -c "alter role root with password 'changeme'"
+
+/home/paas/build_dir/target/postgres/bin/psql -p 5432 -h localhost -d cloud_controller -c "create extension citext"
+
+
+## 配置uaa
+
+# 修改nats_ip
+sed -i "s/host: <\%\= local_ip %>/host: <%= @nats_ip %>/g" /home/paas/paas-release.git/jobs/uaa/uaa.yml.erb
+
+
+## 配置cloud_contoller_ng
+
+# 修改nats_ip
+sed -i "s/message_bus_uri: nats:\/\/<\%\= local_ip %>:4222/message_bus_uri: nats:\/\/<%= @nats_ip %>:4222/g" /home/paas/paas-release.git/jobs/cloud_controller_ng/cloud_controller_ng.yml.erb
+
+# 修改uaa_ip
+sed -i "s/url: \"http:\/\/<\%\= local_ip %>:8080\/uaa\"/url: \"http:\/\/<%= @uaa_ip %>:8080\/uaa\"/g" /home/paas/paas-release.git/jobs/cloud_controller_ng/cloud_controller_ng.yml.erb
+
+
+## 配置hm
+
+# 修改nats_ip
+sed -i "s/mbus: nats:\/\/<\%\= local_ip %>:4222\//mbus: nats:\/\/<%= @nats_ip %>:4222\//g" /home/paas/paas-release.git/jobs/health_manager/health_manager.yml.erb
+
+
+## 启动命令
+
+# 启动postgres
+/home/paas/paas-release.git/bin/paas postgres start
+
+# 启动cc
+/home/paas/paas-release.git/bin/paas cloud_controller_ng start
+
+# 启动uaa
+/home/paas/paas-release.git/bin/paas uaa start
+
+# 启动hm
+/home/paas/paas-release.git/bin/paas health_manager start

@@ -1,0 +1,12 @@
+#!bin/bash
+
+# 修改nats_ip
+sed -i "s/nats_uri: nats:\/\/<\%\= local_ip %>:4222/nats_uri: nats:\/\/<%= @nats_ip %>:4222/g" /home/paas/paas-release.git/jobs/dea_ng/dea.yml.erb
+
+# 修改index
+sed -i 's/index: 0/index: <%= index%>/g' /home/paas/paas-release.git/jobs/dea_ng/dea.yml.erb
+
+# 启动dea
+/home/paas/paas-release.git/bin/paas warden start
+/home/paas/paas-release.git/bin/paas dea_ng start
+/home/paas/paas-release.git/bin/paas directory_server start
